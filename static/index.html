@@ -1,0 +1,58 @@
+<html>
+  <head>
+    <script src='//cdnjs.cloudflare.com/ajax/libs/yepnope/1.5.4/yepnope.min.js'></script>
+    <script>
+      yepnope([
+        {
+          load: "//cdnjs.cloudflare.com/ajax/libs/jquery/2.1.1-rc2/jquery.min.js",
+          complete: function() {
+            if (!window.jQuery) yepnope('jquery.min.js');
+          }
+        },
+        {
+          load: "//cdnjs.cloudflare.com/ajax/libs/socket.io/0.9.16/socket.io.min.js"
+        },
+        {
+          load: "gyro.min.js",
+          complete: function () {$(init)}
+        }
+      ]);
+      
+      function init() {
+        applicationState = "unconnected"; // unconnected -> connected -> waiting -> active -> timeup; disconnected
+        var interval = null;
+        var socket = io.connect("/phonein");
+        socket.on('connect', function() {
+          applicationState = "connected";
+        }).on('enqueued', function(data) {
+          applicationState = "waiting";
+        }).on('ready', function() {
+          applicationState = "active";
+          interval = setInterval(function() {
+            var o = gyro.getOrientation()
+            socket.emit('beep', o.alpha, o.beta, o.gamma);
+          }, 100);
+        }).on('timeup', function(data) {
+          applicationState = "timeup";
+          clearInterval(interval);
+        }).on('disconnect', function() {
+          if (applicationState != "timeup")
+            applicationState = "disconnected";
+        });
+        
+        gyro.frequency = 10;
+        gyro.startTracking(function(o){
+          $('#a').text(o.alpha);
+          $('#b').text(o.beta);
+          $('#g').text(o.gamma);
+          $('#support').text(String(gyro.getFeatures()));
+        });
+      }
+    </script>
+  </head>
+<body>
+  <span id='support'></span>
+  <br>
+  <span id='a'></span>, <span id='b'></span>, <span id='g'></span>
+</body>
+</html>
