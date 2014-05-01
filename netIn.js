@@ -24,29 +24,37 @@ module.exports = function() {
 		primus.on('connection', function(socket) {
 			// unconnected -> connected -> waiting -> active -> timeup; disconnected
 
-			// enqueue our client
-			if (!connectedClients[socket.address.ip] || !connectedClients[socket.address.ip].socket) {
+			if (!connectedClients[socket.address.ip] || connectedClients[socket.address.ip].status == "timeup" || connectedClients[socket.address.ip].status == "missed") {
+				// completely new client, returning client, or dequeued while disconnected. enqueue
 				connectedClients[socket.address.ip] = {
 					"socket": socket,
-					"status": "enqueued"
+					"status": "waiting"
 				};
 				queue.enqueue(socket.address.ip);
-				socket.write({statusUpdate: "enqueued"});
+				socket.write({statusUpdate: "waiting", queueLength: queue.getLength()});
+			}
+			else {
+				// reconnecting client. just renew the socket.
+				connectedClients[socket.address.ip].socket = socket;
+				socket.write({statusUpdate: connectedClients[socket.address.ip].status});
 			}
 
 			// set up event listeners for our client
 			socket.on('data', function(data) {
 				if ((currentClient == socket.address.ip)) {
 					outputHandler.receiveCallback(preprocessor(data));
+					socket.write(data); // ping calculation
 				}
 				else {
 					// some feedback to client maybe?
 				}
 			});
 			socket.on('end', function() {
-				if (socket.address.ip == currentClient) nextClient();
-				connectedClients[socket.address.ip].socket = null;
-				connectedClients[socket.address.ip].status = "disconnected";
+				// socket apparently can't be deleted safely anyway
+				//connectedClients[socket.address.ip].socket = null;
+				// leave status as is so we know where client is in the process
+				//connectedClients[socket.address.ip].status = null;
+				console.log(socket.address);
 			});
 
 			// kickstart
@@ -65,12 +73,13 @@ module.exports = function() {
 		}
 		// bump up to next in queue, check if is still connected, else try again till queue is empty
 		while (currentClient = queue.dequeue()) {
-			if (connectedClients[currentClient].status == "enqueued") break;
+			if (connectedClients[currentClient].status == "waiting") break;
+			else connectedClients[currentClient].status = "missed";
 		}
 		// inform our client
 		if (currentClient) {
 			connectedClients[currentClient].status = "active";
-			connectedClients[currentClient].socket.write({statusUpdate: "ready"});
+			connectedClients[currentClient].socket.write({statusUpdate: "active"});
 		}
 		return;
 	}

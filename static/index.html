@@ -19,21 +19,41 @@
 			]);
 			
 			function init() {
+				// // test for gyro support
+				// var test = gyro.getOrientation()
+				// if (!test.alpha && !test.beta && !test.gamma) {
+				// 	applicationState = "gyroUnsupported";
+				// 	return;
+				// }
+				// // test for websocket support
+				// if (typeof(WebSocket) != "function") {
+				// 	applicationState = "wsUnsupported";
+				// 	return;
+				// }
+
 				applicationState = "unconnected"; // unconnected -> connected -> waiting -> active -> timeup; disconnected
+				// let's go!
 				var socket = Primus.connect('');
+
+				t = {};
+
 				socket.on('open', function() {
+					// connected but not acknowledged
 					applicationState = "connected";
 				}).on('data', function(data) {
 					if (data.statusUpdate) {
 						switch (data.statusUpdate) {
-							case "enqueued": 
+							case "waiting": 
 								applicationState = "waiting";
 								break;
-							case "ready": 
+							case "active": 
 								applicationState = "active";
 								interval = setInterval(function() {
-									var o = gyro.getOrientation()
-									socket.write([o.alpha, o.beta, o.gamma]);
+									var o = gyro.getOrientation();
+									o = {alpha: Math.random() * 360, beta: Math.random() * 360, gamma: Math.random() * 360, }
+									socket.write([o.alpha.toFixed(1), o.beta.toFixed(1), o.gamma.toFixed(1)]);
+
+									t[o.alpha.toFixed(1)] = performance.now()
 								}, 100);
 								break;
 							case "timeup": 
@@ -43,9 +63,15 @@
 							default: applicationState = "disconnected";
 						}
 					}
+
+					else {
+						// ping measurement
+						$("#latency").append((performance.now()-t[data[0]]) + " ");
+					}
 				}).on('reconnecting', function() {
 					applicationState = "reconnecting";
 				}).on('end', function() {
+					// if connection is permanently dropped without a timeup, assume the server messed up
 					if (applicationState != "timeup") {
 						applicationState = "disconnected";
 					}
@@ -82,5 +108,6 @@
 	<span id='support'></span>
 	<br>
 	<span id='a'></span>, <span id='b'></span>, <span id='g'></span>
+	<span id='latency'></span>
 </body>
 </html>

@@ -1,0 +1,3 @@
+implement timeout for disconnected active; figure out how to refer to socket object in on('end')
+console messages on major events: new client, disconnection, queue advancement etc
+test latency, optimize options for ws on both client and server
