@@ -1,1 +1,2 @@
-require('./consoleOut.js').init(require('./netIn.js').init().get)
+var outputHandler = require('./consoleOut.js').init();
+var input = require('./netIn.js').init(outputHandler);
