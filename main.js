@@ -1,6 +1,6 @@
 var outputHandler = require('./unityOut.js');
 var input = require('./netIn.js');
-var logger = require('./logger.js');
+var controller = require('./admin.js');
 outputHandler.init();
-logger.init(input);
-input.init(outputHandler, null, logger);
+controller.init(input);
+input.init(outputHandler, null, controller);
