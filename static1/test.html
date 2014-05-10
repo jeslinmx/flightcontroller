@@ -1,0 +1,14 @@
+<html>
+<body>
+	<script src='//cdnjs.cloudflare.com/ajax/libs/jquery/2.1.1-rc2/jquery.min.js'></script>
+	<script src="/primus/primus.js"></script>
+	<script type="text/javascript">
+		var socket = Primus.connect('');
+
+		socket.on('open', function() {
+		}).on('data', function(data) {
+			console.log(data);
+		});
+	</script>
+</body>
+</html>
