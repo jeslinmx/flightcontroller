@@ -50,7 +50,7 @@
 								applicationState = "active";
 								interval = setInterval(function() {
 									var o = gyro.getOrientation();
-									o = {alpha: Math.random() * 360, beta: Math.random() * 360, gamma: Math.random() * 360, }
+									//o = {alpha: Math.random() * 360, beta: Math.random() * 360, gamma: Math.random() * 360, }
 									socket.write([o.alpha.toFixed(1), o.beta.toFixed(1), o.gamma.toFixed(1)]);
 
 									t[o.alpha.toFixed(1)] = performance.now()
