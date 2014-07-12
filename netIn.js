@@ -3,6 +3,7 @@ module.exports = function() {
 	var queue = []
 	var connectedClients = {};
 	var currentClient = null;
+	var activeTimeout = null;
 	var outputValues = [0.0,0.0,0.0];
 	var outputHandler = function(){};
 	var preprocessor;
@@ -42,6 +43,9 @@ module.exports = function() {
 				logger.log("NETIN: new client connected and enqueued - ", socket.address);
 			}
 			else {
+				// clear the timeout
+				clearTimeout(activeTimeout);
+				logger.log("NETIN: clearing timeout");
 				// reconnecting client. just renew the socket.
 				logger.log("NETIN: client reconnected with status ", connectedClients[socket.address.ip].status, ", reassigning status to active - ", socket.address);
 				connectedClients[socket.address.ip] = {
@@ -66,6 +70,12 @@ module.exports = function() {
 				// the ip address can't be accessed the normal way after the client is disconnected
 				connectedClients[socket.request.client._peername.address].status = "reconnecting";
 				logger.log("NETIN: client broke connection - ", socket.request.client._peername.address);
+
+				// now, the timeout for active clients
+				if (currentClient == socket.request.client._peername.address) {
+					activeTimeout = setTimeout(nextClient, 10000);
+					logger.log("NETIN: client was active; timeout set for 10000ms");
+				}
 			});
 
 			// kickstart
@@ -78,11 +88,14 @@ module.exports = function() {
 	
 	function nextClient() {
 		// end session of current client
-		if (currentClient) {
+		if (currentClient && connectedClients[currentClient].status == "active") {
 			connectedClients[currentClient].socket.write({statusUpdate: "timeup"});
 			connectedClients[currentClient].status = "timeup";
 			connectedClients[currentClient].socket.end();
 		}
+
+		// if queue is empty, there is no available client, but the loop is never entered
+		currentClient = null;
 		// bump up to next in queue, check if is still connected, else try again till queue is empty
 		for (var i = 0; i < queue.length; i++) {
 			currentClient = queue[i];
@@ -101,6 +114,9 @@ module.exports = function() {
 			connectedClients[currentClient].socket.write({statusUpdate: "active"});
 
 			logger.log("NETIN: active client - ", connectedClients[currentClient].socket.address);
+		}
+		else {
+			logger.log("NETIN: no available clients were found. Waiting.");
 		}
 		return;
 	}
