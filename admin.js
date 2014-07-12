@@ -23,7 +23,9 @@ module.exports = (function () {
 				try {
 					log(target[line]());
 				}
-				catch (e) {}
+				catch (e) {
+					log("Error in executing ", line, " : ",e);
+				}
 			}
 			else {
 				log(target[line]);
@@ -35,12 +37,18 @@ module.exports = (function () {
 			process.exit(0);
 		})
 	}
-	function log (message) {
+	function log() {
 		rl.pause();
 
-		// convert to json before logging objects
-		if (typeof(message) == "object") console.log(prettyjson.render(message));
-		else console.log(message.toString());
+		var output = "";
+		for (var i = 0; i < arguments.length; i++) {
+			if (typeof(arguments[i]) == "object") {
+				if (output != "") output += ": (object follows next line)\n"; //push json output to next line for the sake of pretty
+				output += prettyjson.render(arguments[i]) + "\n";
+			}
+			else if (typeof(arguments[i]) != "undefined") output += arguments[i].toString();
+		};
+		console.log(output);
 
 		rl.prompt();
 	}

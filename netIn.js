@@ -1,7 +1,6 @@
 module.exports = function() {
-	function Queue(){var a=[],b=0;this.getLength=function(){return a.length-b};this.isEmpty=function(){return 0==a.length};this.enqueue=function(b){a.push(b)};this.dequeue=function(){if(0!=a.length){var c=a[b];2*++b>=a.length&&(a=a.slice(b),b=0);return c}};this.peek=function(){return 0<a.length?a[b]:void 0}};
 	
-	var queue = new Queue();
+	var queue = []
 	var connectedClients = {};
 	var currentClient = null;
 	var outputValues = [0.0,0.0,0.0];
@@ -13,6 +12,8 @@ module.exports = function() {
 		outputHandler = out;
 		preprocessor = prepFunc || function(data) {return data;};
 		logger = log || console;
+
+		var util = require('util');
 
 		// set up static file server
 		var express = require("express");
@@ -26,23 +27,28 @@ module.exports = function() {
 		primus.on('connection', function(socket) {
 			// unconnected -> connected -> waiting -> active -> timeup; disconnected
 
-			if (!connectedClients[socket.address.ip] || connectedClients[socket.address.ip].status == "timeup" || connectedClients[socket.address.ip].status == "missed") {
-				// completely new client, returning client, or dequeued while disconnected. enqueue
+			if (!connectedClients[socket.address.ip] || currentClient != socket.address.ip) {
+				// completely new client or returning client who isn't active.
+				if (!connectedClients[socket.address.ip] || connectedClients[socket.address.ip].status != "waiting") {
+					// if not known to be queued, enqueue.
+					queue.push(socket.address.ip);
+				}
 				connectedClients[socket.address.ip] = {
 					"socket": socket,
 					"status": "waiting"
 				};
-				queue.enqueue(socket.address.ip);
-				socket.write({statusUpdate: "waiting", queueLength: queue.getLength()});
+				socket.write({statusUpdate: "waiting", queueLength: queue.length});
 
-				logger.log("NETIN: new client connected and enqueued - " + JSON.stringify(socket.address));
+				logger.log("NETIN: new client connected and enqueued - ", socket.address);
 			}
 			else {
 				// reconnecting client. just renew the socket.
-				connectedClients[socket.address.ip].socket = socket;
+				logger.log("NETIN: client reconnected with status ", connectedClients[socket.address.ip].status, ", reassigning status to active - ", socket.address);
+				connectedClients[socket.address.ip] = {
+					"socket": socket,
+					"status": "active"
+				};
 				socket.write({statusUpdate: connectedClients[socket.address.ip].status});
-
-				logger.log("NETIN: client reconnected with status " + connectedClients[socket.address.ip].status + " - " + JSON.stringify(socket.address));
 			}
 
 			// set up event listeners for our client
@@ -57,11 +63,9 @@ module.exports = function() {
 				}
 			});
 			socket.on('end', function() {
-				// socket apparently can't be deleted safely anyway
-				//connectedClients[socket.address.ip].socket = null;
-				// leave status as is so we know where client is in the process
-				//connectedClients[socket.address.ip].status = null;
-				logger.log("NETIN: client disconnected - " + JSON.stringify(socket.address));
+				// the ip address can't be accessed the normal way after the client is disconnected
+				connectedClients[socket.request.client._peername.address].status = "reconnecting";
+				logger.log("NETIN: client broke connection - ", socket.request.client._peername.address);
 			});
 
 			// kickstart
@@ -80,16 +84,23 @@ module.exports = function() {
 			connectedClients[currentClient].socket.end();
 		}
 		// bump up to next in queue, check if is still connected, else try again till queue is empty
-		while (currentClient = queue.dequeue()) {
-			if (connectedClients[currentClient].status == "waiting") break;
-			else connectedClients[currentClient].status = "missed";
+		for (var i = 0; i < queue.length; i++) {
+			currentClient = queue[i];
+
+			if (connectedClients[currentClient].status == "waiting") {
+				queue.splice(i, 1);
+				break;
+			}
+
+			// this will be value of currentClient if the break clause never activates, and hence there's no available client
+			currentClient = null;
 		}
 		// inform our client
 		if (currentClient) {
 			connectedClients[currentClient].status = "active";
 			connectedClients[currentClient].socket.write({statusUpdate: "active"});
 
-			logger.log("NETIN: active client - " + JSON.stringify(connectedClients[currentClient].socket.address));
+			logger.log("NETIN: active client - ", connectedClients[currentClient].socket.address);
 		}
 		return;
 	}
@@ -97,6 +108,7 @@ module.exports = function() {
 	return {
 		init: init,
 		nextClient: nextClient,
+		queue: queue,
 		connectedClients: function() { 
 			var temp = {};
 			for (var i in connectedClients) {
