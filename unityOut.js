@@ -3,6 +3,7 @@ module.exports = function() {
 	net = require('net');
 	var connectedClients = [];
 	var logger;
+	var util = require('util');
 
 	function init(portNumber, sockpolPort, log) {
 
@@ -10,19 +11,23 @@ module.exports = function() {
 
 		net.createServer(function (socket) {
 
+			var address = socket.remoteAddress; //thank you, closures.
+
 			connectedClients.push(socket);
-			logger.log("UNITYOUT: connection from ", socket.remoteAddress);
+			logger.log("UNITYOUT: connection from ", address);
 
 			socket.on("end", function(){
-				connectedClients.splice(connectedClients.indexOf(socket), 1);
-				socket.end();
-				logger.log("UNITYOUT: connection closed by ", socket.remoteAddress);
+				removeClient(socket);
+				logger.log("UNITYOUT: connection closed by ", address);
 			});
 			socket.on("timeout", function(){
-				connectedClients.splice(connectedClients.indexOf(socket), 1);
-				socket.end();
-				logger.log("UNITYOUT: connection to ", socket.remoteAddress, " timed out.");
+				removeClient(socket);
+				logger.log("UNITYOUT: connection to ", address, " timed out.");
 			});
+			socket.on("error", function(e) {
+				removeClient(socket);
+				logger.log("UNITYOUT: error from TCP. probably ECONNRESET, so removing client ", address," now.");
+			})
 
 		}).listen(portNumber);
 
@@ -32,12 +37,7 @@ module.exports = function() {
 	function receiveCallback(data) {
 		var string = data.join(" ");
 		for (var i = connectedClients.length - 1; i >= 0; i--) {
-			try {
-				connectedClients[i].write(string + "\n");
-			}
-			catch (e) {
-				logger.log("TCP ERROR: ", e);
-			}
+			connectedClients[i].write(string + "\n");
 		};
 	}
 
@@ -64,6 +64,11 @@ module.exports = function() {
 				stream.end();
 			});
 		}).listen(port, host);
+	}
+
+	function removeClient(socket) {
+		connectedClients.splice(connectedClients.indexOf(socket), 1);
+		socket.end();
 	}
 
 	return {
