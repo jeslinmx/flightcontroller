@@ -3,7 +3,6 @@ module.exports = function() {
 	net = require('net');
 	var connectedClients = [];
 	var logger;
-	var util = require('util');
 
 	function init(portNumber, sockpolPort, log) {
 
