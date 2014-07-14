@@ -3,17 +3,18 @@ module.exports = (function () {
 	var prettyjson = require('prettyjson');
 	var rl;
 	var target;
+	var options = {
+		input: process.stdin,
+		output: process.stdout,
+		completer: function(line) {
+			var answer = Object.keys(t).filter(function(c) { return c.indexOf(line) == 0; });
+			return [ answer.length? answer: Object.keys(t), line];
+		}
+	}
 
 	function init (t) {
 		target = t;
-		rl = readline.createInterface({
-			input: process.stdin,
-			output: process.stdout,
-			completer: function(line) {
-				var answer = Object.keys(t).filter(function(c) { return c.indexOf(line) == 0; });
-				return [ answer.length? answer: Object.keys(t), line];
-			}
-		});
+		rl = readline.createInterface(options);
 		rl.setPrompt("> ");
 		rl.prompt();
 
@@ -33,8 +34,10 @@ module.exports = (function () {
 
 			rl.prompt();
 		}).on('close', function() {
+
 			log("closing");
 			process.exit(0);
+			
 		})
 	}
 	function log() {
