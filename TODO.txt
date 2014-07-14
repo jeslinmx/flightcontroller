@@ -1,2 +1,3 @@
-implement timeout for disconnected active;
-test latency, optimize options for ws on both client and server
+test latency, optimize options for ws on both client and server (using protobuf?)
+graceful server side shutdown (extremely optional)
+refactor on netin

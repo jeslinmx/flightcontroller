@@ -51,7 +51,7 @@
 								interval = setInterval(function() {
 									var o = gyro.getOrientation();
 									//o = {alpha: Math.random() * 360, beta: Math.random() * 360, gamma: Math.random() * 360, }
-									socket.write([o.alpha.toFixed(1), o.beta.toFixed(1), o.gamma.toFixed(1)]);
+									socket.write([o.x.toFixed(1), o.y.toFixed(1), o.z.toFixed(1)]);
 
 									t[o.alpha.toFixed(1)] = performance.now()
 								}, 100);
@@ -66,7 +66,7 @@
 
 					else {
 						// ping measurement
-						$("#latency").append((performance.now()-t[data[0]]) + " ");
+						//$("#latency").append((performance.now()-t[data[0]]) + " ");
 					}
 				}).on('reconnecting', function() {
 					applicationState = "reconnecting";
@@ -96,9 +96,9 @@
 				
 				gyro.frequency = 10;
 				gyro.startTracking(function(o){
-					$('#a').text(o.alpha);
-					$('#b').text(o.beta);
-					$('#g').text(o.gamma);
+					$('#a').text(o.x.toFixed(1));
+					$('#b').text(o.y.toFixed(1));
+					$('#g').text(o.z.toFixed(1));
 					$('#support').text(String(gyro.getFeatures()));
 				});
 			}
@@ -107,7 +107,11 @@
 <body>
 	<span id='support'></span>
 	<br>
-	<span id='a'></span>, <span id='b'></span>, <span id='g'></span>
+	<table style="width: 100px; table-layout:fixed">
+		<tr>
+			<td style="width: 33%" id='a'></td>, <td style="width: 33%" id='b'></td>, <td style="width: 33%" id='g'></td>
+		</tr>
+	</table>
 	<span id='latency'></span>
 </body>
 </html>

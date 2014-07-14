@@ -9,18 +9,16 @@ module.exports = function() {
 	var preprocessor;
 	var logger;
 	
-	function init(out, prepFunc, log) {
+	function init(portNumber, out, prepFunc, log) {
 		outputHandler = out;
 		preprocessor = prepFunc || function(data) {return data;};
 		logger = log || console;
-
-		var util = require('util');
 
 		// set up static file server
 		var express = require("express");
 		var app = express();
 		app.use("/", express.static(__dirname + "/static"));
-		var server = app.listen(8888);
+		var server = app.listen(portNumber);
 		
 		// set up for Primus
 		var Primus = require('primus');
@@ -45,7 +43,6 @@ module.exports = function() {
 			else {
 				// clear the timeout
 				clearTimeout(activeTimeout);
-				logger.log("NETIN: clearing timeout");
 				// reconnecting client. just renew the socket.
 				logger.log("NETIN: client reconnected with status ", connectedClients[socket.address.ip].status, ", reassigning status to active - ", socket.address);
 				connectedClients[socket.address.ip] = {
@@ -87,6 +84,8 @@ module.exports = function() {
 	}
 	
 	function nextClient() {
+		// clear the timeout
+		if (activeTimeout) clearTimeout(activeTimeout);
 		// end session of current client
 		if (currentClient && connectedClients[currentClient].status == "active") {
 			connectedClients[currentClient].socket.write({statusUpdate: "timeup"});
