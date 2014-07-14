@@ -8,25 +8,36 @@ module.exports = function() {
 
 		logger = log || console;
 
-		net.createServer(function (stream) {
-			connectedClients.push(stream);
-			logger.log("UNITYOUT: connection from ", stream.remoteAddress);
-			stream.on("end", function(){
-				logger.log("UNITYOUT: connection closed by ", stream.remoteAddress);
-				connectedClients.splice(connectedClients.indexOf(stream), 1);
+		net.createServer(function (socket) {
+
+			connectedClients.push(socket);
+			logger.log("UNITYOUT: connection from ", socket.remoteAddress);
+
+			socket.on("end", function(){
+				connectedClients.splice(connectedClients.indexOf(socket), 1);
+				socket.end();
+				logger.log("UNITYOUT: connection closed by ", socket.remoteAddress);
 			});
-			stream.on("timeout", function(){
-				logger.log("UNITYOUT: connection to ", stream.remoteAddress, " timed out.");
-				connectedClients.splice(connectedClients.indexOf(stream), 1);
+			socket.on("timeout", function(){
+				connectedClients.splice(connectedClients.indexOf(socket), 1);
+				socket.end();
+				logger.log("UNITYOUT: connection to ", socket.remoteAddress, " timed out.");
 			});
+
 		}).listen(portNumber);
 
 		initSockPolServer(sockpolPort);
 	}
 
 	function receiveCallback(data) {
+		var string = data.join(" ");
 		for (var i = connectedClients.length - 1; i >= 0; i--) {
-			connectedClients[i].write(JSON.stringify(data) + "\n");
+			try {
+				connectedClients[i].write(string + "\n");
+			}
+			catch (e) {
+				logger.log("TCP ERROR: ", e);
+			}
 		};
 	}
 
@@ -59,5 +70,5 @@ module.exports = function() {
 		init: init,
 		receiveCallback: receiveCallback
 	}
-	
+
 }()

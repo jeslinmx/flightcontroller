@@ -133,7 +133,7 @@ module.exports = function() {
 		// now, the timeout for active clients
 		if (currentClient == this.request.client._peername.address) {
 			activeTimeout = setTimeout(nextClient, 10000);
-			logger.log("NETIN: client was active; timeout set for 10000ms");
+			logger.log("NETIN: disconnecting client was active; timeout set for 10000ms");
 		}
 	}
 	
