@@ -125,16 +125,16 @@ module.exports = function() {
 	}
 
 	function endCallback() {
+		logger.log(require('util').inspect(this, {depth: 5}))
+		// // the ip address can't be accessed the normal way after the client is disconnected, so a deeply hidden alternative is .request.client._peername.address
+		// connectedClients[this.request.client._peername.address].status = "reconnecting";
+		// logger.log("NETIN: client broke connection - ", this.request.client._peername.address);
 
-		// the ip address can't be accessed the normal way after the client is disconnected, so a deeply hidden alternative is .request.client._peername.address
-		connectedClients[this.request.client._peername.address].status = "reconnecting";
-		logger.log("NETIN: client broke connection - ", this.request.client._peername.address);
-
-		// now, the timeout for active clients
-		if (currentClient == this.request.client._peername.address) {
-			activeTimeout = setTimeout(nextClient, 10000);
-			logger.log("NETIN: disconnecting client was active; timeout set for 10000ms");
-		}
+		// // now, the timeout for active clients
+		// if (currentClient == this.request.client._peername.address) {
+		// 	activeTimeout = setTimeout(nextClient, 10000);
+		// 	logger.log("NETIN: disconnecting client was active; timeout set for 10000ms");
+		// }
 	}
 	
 	return {
