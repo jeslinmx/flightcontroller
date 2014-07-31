@@ -70,6 +70,8 @@ module.exports = function() {
 	function connectionCallback(socket) {
 		// unconnected -> connected -> waiting -> active -> timeup; disconnected
 
+		socket.originalIP = socket.address.ip;
+
 		if (!connectedClients[socket.address.ip] || currentClient != socket.address.ip) { // completely new client or returning client who isn't active.
 			
 			// if not known to be queued, enqueue.
@@ -125,16 +127,15 @@ module.exports = function() {
 	}
 
 	function endCallback() {
-		logger.log(require('util').inspect(this, {depth: 5}))
-		// // the ip address can't be accessed the normal way after the client is disconnected, so a deeply hidden alternative is .request.client._peername.address
-		// connectedClients[this.request.client._peername.address].status = "reconnecting";
-		// logger.log("NETIN: client broke connection - ", this.request.client._peername.address);
+		// the ip address can't be accessed the normal way after the client is disconnected, so a deeply hidden alternative is .request.client._peername.address
+		connectedClients[this.originalIP].status = "reconnecting";
+		logger.log("NETIN: client broke connection - ", this.originalIP);
 
-		// // now, the timeout for active clients
-		// if (currentClient == this.request.client._peername.address) {
-		// 	activeTimeout = setTimeout(nextClient, 10000);
-		// 	logger.log("NETIN: disconnecting client was active; timeout set for 10000ms");
-		// }
+		// now, the timeout for active clients
+		if (currentClient == this.originalIP) {
+			activeTimeout = setTimeout(nextClient, 10000);
+			logger.log("NETIN: disconnecting client was active; timeout set for 10000ms");
+		}
 	}
 	
 	return {
