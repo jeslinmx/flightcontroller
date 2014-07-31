@@ -7,8 +7,8 @@ module.exports = (function () {
 		input: process.stdin,
 		output: process.stdout,
 		completer: function(line) {
-			var answer = Object.keys(t).filter(function(c) { return c.indexOf(line) == 0; });
-			return [ answer.length? answer: Object.keys(t), line];
+			var answer = Object.keys(target).filter(function(c) { return c.indexOf(line) == 0; });
+			return [ answer.length? answer: Object.keys(target), line];
 		}
 	}
 
