@@ -70,7 +70,7 @@ module.exports = function() {
 	function connectionCallback(socket) {
 		// unconnected -> connected -> waiting -> active -> timeup; disconnected
 
-		socket.originalIP = socket.originalIP;
+		socket.originalIP = socket.address.ip;
 
 		if (!connectedClients[socket.originalIP] || currentClient != socket.originalIP) { // completely new client or returning client who isn't active.
 			
