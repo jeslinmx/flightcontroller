@@ -34,6 +34,8 @@
 				var test = gyro.getOrientation()
 				if (test.alpha && test.beta && test.gamma) {
 					support.gyro = true;
+				}
+				else {
 					return;
 				}
 
@@ -54,8 +56,7 @@
 								applicationState = "active";
 								interval = setInterval(function() {
 									var o = gyro.getOrientation();
-									//o = {alpha: Math.random() * 360, beta: Math.random() * 360, gamma: Math.random() * 360, }
-									// socket.write([1.0, o.beta.toFixed(1), (Math.min(o.gamma, 90.0)/90).toFixed(1)]);
+									socket.write([1.0, o.beta.toFixed(1), (Math.min(o.gamma, 90.0)/90).toFixed(1)]);
 								}, 100);
 								break;
 							case "timeup": 
