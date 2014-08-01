@@ -31,13 +31,13 @@
 					"gyro": false
 				};
 				// test for gyro support
-				var test = gyro.getOrientation()
-				if (test.alpha && test.beta && test.gamma) {
-					support.gyro = true;
-				}
-				else {
-					return;
-				}
+				// var test = gyro.getOrientation()
+				// if (test.alpha && test.beta && test.gamma) {
+				// 	support.gyro = true;
+				// }
+				// else {
+				// 	return;
+				// }
 
 				applicationState = "unconnected"; // unconnected -> connected -> waiting -> active -> timeup; disconnected
 				// let's go!
@@ -56,7 +56,7 @@
 								applicationState = "active";
 								interval = setInterval(function() {
 									var o = gyro.getOrientation();
-									socket.write([1.0, o.beta.toFixed(1), (Math.min(o.gamma, 90.0)/90).toFixed(1)]);
+									socket.write([1.0, 90-o.beta.toFixed(1), (Math.min(o.gamma, 90.0)/90).toFixed(1)]);
 								}, 100);
 								break;
 							case "timeup": 
