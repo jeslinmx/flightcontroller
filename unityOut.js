@@ -50,11 +50,11 @@ module.exports = function() {
 			stream.setTimeout(3000); // 3s
 			stream.on('connect', function () {});
 			stream.on('data', function (data) {
-				if (data == '<policy-file-request/>\0') {
-					stream.end(poli + '\0');
-				} else {
-					stream.end();
-				}
+				//if (data == '<policy-file-request/>\0') {
+					stream.end(poli);
+				//} else {
+				//	stream.end();
+				//}
 			});
 			stream.on('end', function () {
 				stream.end();
@@ -62,7 +62,7 @@ module.exports = function() {
 			stream.on('timeout', function () {
 				stream.end();
 			});
-		}).listen(port, host);
+		}).listen(port);
 	}
 
 	function removeClient(socket) {
