@@ -70,16 +70,16 @@ module.exports = function() {
 	function connectionCallback(socket) {
 		// unconnected -> connected -> waiting -> active -> timeup; disconnected
 
-		socket.originalIP = socket.address.ip;
+		socket.originalIP = socket.originalIP;
 
-		if (!connectedClients[socket.address.ip] || currentClient != socket.address.ip) { // completely new client or returning client who isn't active.
+		if (!connectedClients[socket.originalIP] || currentClient != socket.originalIP) { // completely new client or returning client who isn't active.
 			
 			// if not known to be queued, enqueue.
-			if (!connectedClients[socket.address.ip] || connectedClients[socket.address.ip].status != "waiting") {
-				queue.push(socket.address.ip);
+			if (!connectedClients[socket.originalIP] || connectedClients[socket.originalIP].status != "waiting") {
+				queue.push(socket.originalIP);
 			}
 
-			connectedClients[socket.address.ip] = {
+			connectedClients[socket.originalIP] = {
 				"socket": socket,
 				"status": "waiting"
 			};
@@ -94,12 +94,12 @@ module.exports = function() {
 			clearTimeout(activeTimeout);
 
 			// just renew the socket.
-			connectedClients[socket.address.ip] = {
+			connectedClients[socket.originalIP] = {
 				"socket": socket,
 				"status": "active"
 			};
-			socket.write({statusUpdate: connectedClients[socket.address.ip].status});
-			logger.log("NETIN: client reconnected with status ", connectedClients[socket.address.ip].status, ", reassigning status to active - ", socket.address);
+			socket.write({statusUpdate: connectedClients[socket.originalIP].status});
+			logger.log("NETIN: client reconnected with status ", connectedClients[socket.originalIP].status, ", reassigning status to active - ", socket.address);
 
 		}
 
@@ -115,7 +115,7 @@ module.exports = function() {
 
 	function dataCallback (data) {
 
-		if ((currentClient == this.address.ip)) {
+		if ((currentClient == this.originalIP)) {
 			outputValues = data;
 			outputHandler.receiveCallback(preprocessor(data));
 			// this.write(data); // ping calculation
@@ -130,6 +130,8 @@ module.exports = function() {
 		// the ip address can't be accessed the normal way after the client is disconnected, so a deeply hidden alternative is .request.client._peername.address
 		connectedClients[this.originalIP].status = "reconnecting";
 		logger.log("NETIN: client broke connection - ", this.originalIP);
+
+		dataCallback([0.0,0.0,0.0]); //simulate a zeroing call from the client, in case it doesn't send one
 
 		// now, the timeout for active clients
 		if (currentClient == this.originalIP) {
