@@ -30,14 +30,19 @@
 					"leap": false,
 					"gyro": false
 				};
+
 				// test for gyro support
-				// var test = gyro.getOrientation()
-				// if (test.alpha && test.beta && test.gamma) {
-				// 	support.gyro = true;
-				// }
-				// else {
-				// 	return;
-				// }
+				var test = gyro.getOrientation()
+				if (test.alpha && test.beta && test.gamma) {
+					support.gyro = true;
+				}
+
+				// TBD: test for leap support
+
+				if (!(support.gyro || support.leap)) {
+					applicationState = "unsupported";
+					return;
+				}
 
 				applicationState = "unconnected"; // unconnected -> connected -> waiting -> active -> timeup; disconnected
 				// let's go!
@@ -54,10 +59,20 @@
 								break;
 							case "active": 
 								applicationState = "active";
-								interval = setInterval(function() {
-									var o = gyro.getOrientation();
-									socket.write([1.0, 90-o.beta.toFixed(1), (Math.min(o.gamma, 90.0)/90).toFixed(1)]);
-								}, 100);
+								if (support.leap) {
+									// TBD
+									var frame = controller.frame()
+									var thrust = (Math.max(Leap.vec3.distance(frame.hands.leftmost().palmPosition, frame.hands.rightmost().palmPosition), 500) / 500).toFixed(1)
+									var pitch = 180 - (frame.hands.leftmost().direction[0] + frame.hands.rightmost().direction[0])/2
+									var yaw = (frame.hands.leftmost().direction[2] + frame.hands.rightmost().direction[2])/(2 * 90)
+									socket.write([thrust, pitch, yaw])
+								}
+								else if (support.gyro) {
+									interval = setInterval(function() {
+										var o = gyro.getOrientation();
+										socket.write([1.0, 90-o.beta.toFixed(1), (Math.min(o.gamma, 90.0)/90).toFixed(1)]);
+									}, 100);
+								}
 								break;
 							case "timeup": 
 								applicationState = "timeup";
